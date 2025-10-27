@@ -1,15 +1,13 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { getContacts } from '@/lib/actions'
 import { Contact } from '@/lib/supabase'
 import ContactForm from '@/components/ContactForm'
 import Navigation from '@/components/Navigation'
 import UserMenu from '@/components/UserMenu'
 
-export default function ContactsPage() {
+function ContactsPageContent() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [showContactForm, setShowContactForm] = useState(false)
@@ -224,5 +222,17 @@ export default function ContactsPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function ContactsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg text-ink-soft">Lädt Kontakte...</div>
+      </div>
+    }>
+      <ContactsPageContent />
+    </Suspense>
   )
 }
