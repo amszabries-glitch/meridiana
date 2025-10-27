@@ -206,14 +206,16 @@ export default function DocumentList({ documents, onDocumentUpdate }: DocumentLi
                     </div>
                   )}
                   
-                  <div className="flex items-center space-x-4 text-xs text-ink-soft">
-                    {document.project_id && (
-                      <span>Projekt: {document.projects?.name || 'Unbekannt'}</span>
-                    )}
-                    {document.contact_id && (
-                      <span>Kontakt: {document.contacts?.name || 'Unbekannt'}</span>
-                    )}
-                  </div>
+                  {(document.project_id || document.contact_id) && (
+                    <div className="flex items-center space-x-4 text-xs text-ink-soft">
+                      {document.project_id && (
+                        <span>Projekt ID: {document.project_id}</span>
+                      )}
+                      {document.contact_id && (
+                        <span>Kontakt ID: {document.contact_id}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center space-x-2">

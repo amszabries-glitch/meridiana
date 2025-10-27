@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 export interface UploadResult {
   success: boolean
   filePath?: string
+  publicUrl?: string
   error?: string
 }
 

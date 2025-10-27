@@ -64,7 +64,7 @@ export default function PipelineChart({ analytics }: PipelineChartProps) {
           font: {
             family: 'Montserrat',
             size: 12,
-            weight: '600' as const
+            weight: 600 as const
           }
         }
       },

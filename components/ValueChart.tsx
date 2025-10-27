@@ -113,7 +113,7 @@ export default function ValueChart({ analytics }: ValueChartProps) {
           font: {
             family: 'Montserrat',
             size: 12,
-            weight: '600' as const
+            weight: 600 as const
           }
         },
         grid: {
@@ -135,7 +135,7 @@ export default function ValueChart({ analytics }: ValueChartProps) {
           font: {
             family: 'Montserrat',
             size: 12,
-            weight: '600' as const
+            weight: 600 as const
           }
         },
         grid: {

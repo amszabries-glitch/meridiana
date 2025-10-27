@@ -63,7 +63,7 @@ export default function MonthlyTrendChart({ analytics }: MonthlyTrendChartProps)
           font: {
             family: 'Montserrat',
             size: 12,
-            weight: '600' as const
+            weight: 600 as const
           }
         }
       },
@@ -73,7 +73,7 @@ export default function MonthlyTrendChart({ analytics }: MonthlyTrendChartProps)
         font: {
           family: 'Playfair Display',
           size: 18,
-          weight: 'bold' as const
+            weight: 'bold' as 'bold'
         },
         color: '#102231'
       },
@@ -103,7 +103,7 @@ export default function MonthlyTrendChart({ analytics }: MonthlyTrendChartProps)
           font: {
             family: 'Montserrat',
             size: 12,
-            weight: '600' as const
+            weight: 600 as const
           }
         },
         grid: {
@@ -125,7 +125,7 @@ export default function MonthlyTrendChart({ analytics }: MonthlyTrendChartProps)
           font: {
             family: 'Montserrat',
             size: 12,
-            weight: '600' as const
+            weight: 600 as const
           }
         },
         grid: {

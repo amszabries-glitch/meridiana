@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { createDocument } from '@/lib/actions'
 import { uploadFile } from '@/lib/storage'
-import { NewDocument } from '@/lib/supabase'
+import { Document } from '@/lib/supabase'
 
 interface DocumentUploadProps {
   projectId?: string
@@ -117,7 +117,7 @@ export default function DocumentUpload({
 
         console.log('File uploaded successfully:', uploadResult.filePath)
         
-        const documentData: NewDocument = {
+        const documentData: Omit<Document, 'id' | 'created_at' | 'updated_at'> = {
           name: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
           file_name: file.name,
           file_path: uploadResult.filePath!,

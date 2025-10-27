@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
 import { getDocuments } from '@/lib/actions'
 
 export async function GET() {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createSupabaseClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { DashboardStats, PipelineData } from '@/types'
 
 export function useDashboard() {
@@ -9,7 +9,6 @@ export function useDashboard() {
   const [pipeline, setPipeline] = useState<PipelineData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createSupabaseClient()
 
   useEffect(() => {
     // Demo mode - load demo data

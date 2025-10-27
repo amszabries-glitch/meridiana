@@ -12,19 +12,11 @@ export async function createSupabaseServerClient() {
         get(name: string) {
           return cookieStore.get(name)?.value
         },
-        set(name: string, value: string, options: any) {
-          try {
-            cookieStore.set(name, value, options)
-          } catch (error) {
-            // Cookies can't be set in Server Actions
-          }
+        set() {
+          // Cookies can't be set in Server Actions (they're set via middleware)
         },
-        remove(name: string, options: any) {
-          try {
-            cookieStore.set(name, '', { ...options, maxAge: 0 })
-          } catch (error) {
-            // Cookies can't be removed in Server Actions
-          }
+        remove() {
+          // Cookies can't be removed in Server Actions (they're removed via middleware)
         },
       },
     }

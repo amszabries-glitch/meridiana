@@ -12,7 +12,7 @@ interface EditProjectModalProps {
 }
 
 export default function EditProjectModal({ project, isOpen, onClose, onSuccess }: EditProjectModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Partial<Project>>({
     name: '',
     company_name: '',
     status: 'lead',

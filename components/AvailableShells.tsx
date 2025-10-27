@@ -146,7 +146,7 @@ export default function AvailableShells() {
                   <span className="text-xs text-ink-soft">{shell.sector}</span>
                 </td>
                 <td className="py-3 px-4 text-right">
-                  <p className="text-sm font-semibold text-ink">{formatCurrency(shell.market_cap)}</p>
+                  <p className="text-sm font-semibold text-ink">{shell.market_cap ? formatCurrency(shell.market_cap) : '—'}</p>
                 </td>
                 <td className="py-3 px-4 text-right">
                   <p className="text-sm font-semibold text-gold">

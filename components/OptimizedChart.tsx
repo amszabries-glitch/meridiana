@@ -172,7 +172,7 @@ const OptimizedChart = memo(function OptimizedChart({
           font: {
             family: 'Montserrat',
             size: 11,
-            weight: '600' as const
+            weight: 600 as const
           }
         }
       },
@@ -182,7 +182,7 @@ const OptimizedChart = memo(function OptimizedChart({
         font: {
           family: 'Playfair Display',
           size: 16,
-          weight: 'bold' as const
+          weight: 'bold' as 'bold'
         },
         color: '#102231'
       },
@@ -197,7 +197,7 @@ const OptimizedChart = memo(function OptimizedChart({
         titleFont: {
           family: 'Montserrat',
           size: 12,
-          weight: '600' as const
+          weight: 600
         },
         bodyFont: {
           family: 'Montserrat',

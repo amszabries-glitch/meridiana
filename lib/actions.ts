@@ -1,7 +1,11 @@
 'use server'
 
 import { createSupabaseServerClient } from './supabase-server'
-import { Project, Contact, Document, NewDocument, DocumentVersion, NewDocumentVersion, ProjectStatusHistory, Milestone, AvailableShell } from './supabase'
+import { Project, Contact, Document, DocumentVersion, ProjectStatusHistory, Milestone, AvailableShell } from './supabase'
+
+// Type helpers
+type NewDocument = Omit<Document, 'id' | 'created_at' | 'updated_at'>
+type NewDocumentVersion = Omit<DocumentVersion, 'id' | 'created_at'>
 import { revalidatePath } from 'next/cache'
 
 // Project Actions
@@ -324,6 +328,8 @@ export async function updateDocument(id: string, updates: Partial<Document>) {
 }
 
 export async function deleteDocument(id: string) {
+  const supabase = await createSupabaseServerClient()
+  
   // First get the document to find its project_id before deletion
   const document = await getDocumentById(id)
   
@@ -479,6 +485,8 @@ export async function updateMilestone(id: string, updates: Partial<Milestone>) {
 }
 
 export async function deleteMilestone(id: string, projectId: string) {
+  const supabase = await createSupabaseServerClient()
+  
   const { error } = await supabase
     .from('milestones')
     .delete()
@@ -547,6 +555,8 @@ export async function updateAvailableShell(id: string, updates: Partial<Omit<Ava
 }
 
 export async function deleteAvailableShell(id: string): Promise<void> {
+  const supabase = await createSupabaseServerClient()
+  
   const { error } = await supabase
     .from('available_shells')
     .delete()

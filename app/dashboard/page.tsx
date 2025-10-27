@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { getProjects, getDashboardStats, deleteProject } from '@/lib/actions'
@@ -15,7 +15,7 @@ import PipelineBoard from '@/components/PipelineBoard'
 import AvailableShells from '@/components/AvailableShells'
 import UserMenu from '@/components/UserMenu'
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview')
@@ -695,3 +695,13 @@ export default function DashboardPage() {
           </div>
         )
       }
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">
+      <div className="text-lg text-ink-soft">Lädt Dashboard...</div>
+    </div>}>
+      <DashboardPageContent />
+    </Suspense>
+  )
+}

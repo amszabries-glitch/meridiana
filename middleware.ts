@@ -66,8 +66,11 @@ export async function middleware(request: NextRequest) {
       console.log('Middleware - User has session, redirecting to dashboard')
       const response = NextResponse.redirect(new URL('/dashboard', request.url))
       // Copy over any cookie changes
-      Object.entries(supabaseResponse.cookies.getAll()).forEach(([key, value]) => {
-        response.cookies.set(key, value)
+      supabaseResponse.cookies.getAll().forEach(cookie => {
+        response.cookies.set({
+          name: cookie.name,
+          value: cookie.value,
+        })
       })
       return response
     }
