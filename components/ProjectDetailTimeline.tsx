@@ -50,15 +50,35 @@ export default function ProjectDetailTimeline({ project }: ProjectDetailTimeline
         color: 'bg-green-500 border-green-500',
         description: 'Angebot wurde akzeptiert'
       },
+      contract_finalized: {
+        label: 'Kaufvertrag/Insolvenzplan fertiggestellt',
+        icon: (
+          <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v8m4-4H8m12 0a8 8 0 11-16 0 8 8 0 0116 0z" />
+          </svg>
+        ),
+        color: 'bg-indigo-500 border-indigo-500',
+        description: 'Vertrag und Insolvenzplan fertiggestellt'
+      },
+      creditors_meeting: {
+        label: 'Gläubigerversammlung durchgeführt',
+        icon: (
+          <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h8m-8 4h6M5 6h14v12H5z" />
+          </svg>
+        ),
+        color: 'bg-amber-500 border-amber-500',
+        description: 'Gläubigerversammlung erfolgreich durchgeführt'
+      },
       closed: {
-        label: 'Gewonnen',
+        label: 'Aktien ausgeliefert (abgeschlossen)',
         icon: (
           <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         ),
         color: 'bg-gold border-gold',
-        description: 'Projekt erfolgreich abgeschlossen'
+        description: 'Aktien ausgeliefert und Projekt abgeschlossen'
       }
     }
     return statusData[status as keyof typeof statusData] || statusData.lead
@@ -70,7 +90,9 @@ export default function ProjectDetailTimeline({ project }: ProjectDetailTimeline
       offer_submitted: 1,
       negotiation: 2,
       offer_accepted: 3,
-      closed: 4
+      contract_finalized: 4,
+      creditors_meeting: 5,
+      closed: 6
     }
     return order[status as keyof typeof order] || 0
   }
@@ -78,18 +100,11 @@ export default function ProjectDetailTimeline({ project }: ProjectDetailTimeline
   const currentStatusInfo = getStatusInfo(project.status)
   const currentStatusOrder = getStatusOrder(project.status)
 
-  const allStatuses = ['lead', 'offer_submitted', 'negotiation', 'offer_accepted', 'closed'] as const
+  const allStatuses = ['lead', 'offer_submitted', 'negotiation', 'offer_accepted', 'contract_finalized', 'creditors_meeting', 'closed'] as const
 
   return (
-    <div className="card p-6">
-      <h3 className="text-lg font-bold text-ink mb-6 font-display flex items-center">
-        <svg className="h-5 w-5 text-blue mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        Projekt-Timeline
-      </h3>
-
-      <div className="relative">
+    <div className="md:flex md:flex-col md:min-h-0">
+      <div className="relative pr-2">
         {/* Timeline Line */}
         <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-ink/10"></div>
 
@@ -157,17 +172,20 @@ export default function ProjectDetailTimeline({ project }: ProjectDetailTimeline
       </div>
 
       {/* Progress Overview */}
-      <div className="mt-8 p-4 bg-ink/5 rounded-lg">
+      <div className="mt-6 p-4 bg-gradient-to-br from-blue/5 to-brand/5 rounded-xl border border-blue/20">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-ink">Pipeline-Fortschritt</span>
-          <span className="text-sm font-bold text-ink">{Math.round((currentStatusOrder / 4) * 100)}%</span>
+          <span className="text-sm font-semibold text-ink">Pipeline-Fortschritt</span>
+          <span className="text-lg font-bold text-blue">{Math.round((currentStatusOrder / 6) * 100)}%</span>
         </div>
-        <div className="w-full bg-ink/10 rounded-full h-2">
+        <div className="w-full bg-ink/10 rounded-full h-3 overflow-hidden shadow-inner">
           <div 
-            className="bg-gradient-to-r from-blue to-brand h-2 rounded-full transition-all duration-700"
-            style={{ width: `${(currentStatusOrder / 4) * 100}%` }}
+            className="bg-gradient-to-r from-blue via-brand to-gold h-3 rounded-full transition-all duration-700 shadow-sm"
+            style={{ width: `${(currentStatusOrder / 6) * 100}%` }}
           ></div>
         </div>
+        <p className="text-xs text-ink-soft mt-2">
+          {currentStatusOrder + 1} von 7 Phasen abgeschlossen
+        </p>
       </div>
     </div>
   )

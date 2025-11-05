@@ -11,6 +11,7 @@ interface StatusHistoryProps {
 export default function StatusHistory({ projectId }: StatusHistoryProps) {
   const [history, setHistory] = useState<ProjectStatusHistory[]>([])
   const [loading, setLoading] = useState(true)
+  const [visibleCount, setVisibleCount] = useState(10)
 
   useEffect(() => {
     loadHistory()
@@ -33,7 +34,9 @@ export default function StatusHistory({ projectId }: StatusHistoryProps) {
       offer_submitted: 'Angebot abgegeben',
       negotiation: 'Verhandlung',
       offer_accepted: 'Angebot angenommen',
-      closed: 'Gewonnen'
+      contract_finalized: 'Kaufvertrag/Insolvenzplan fertiggestellt',
+      creditors_meeting: 'Gläubigerversammlung durchgeführt',
+      closed: 'Aktien ausgeliefert (abgeschlossen)'
     }
     return status ? labels[status as keyof typeof labels] || status : 'Ursprünglich'
   }
@@ -44,9 +47,29 @@ export default function StatusHistory({ projectId }: StatusHistoryProps) {
       offer_submitted: 'bg-gold/10 text-gold border-gold',
       negotiation: 'bg-brand/10 text-brand border-brand',
       offer_accepted: 'bg-green-500/10 text-green-600 border-green-500',
+      contract_finalized: 'bg-indigo-500/10 text-indigo-600 border-indigo-500',
+      creditors_meeting: 'bg-amber-500/10 text-amber-600 border-amber-500',
       closed: 'bg-gold/10 text-gold border-gold'
     }
     return status ? colors[status as keyof typeof colors] || 'bg-ink/10 text-ink border-ink/20' : 'bg-gray-100 text-gray-700 border-gray-300'
+  }
+
+  const getInitials = (value?: string) => {
+    if (!value) return '—'
+    const v = value.trim()
+    if (v.includes('@')) {
+      const part = v.split('@')[0]
+      return part.slice(0, 2).toUpperCase()
+    }
+    const words = v.split(/\s+/).filter(Boolean)
+    const initials = (words[0]?.[0] || '') + (words[1]?.[0] || '')
+    return initials.toUpperCase() || v.slice(0, 2).toUpperCase()
+  }
+
+  const localizeNote = (note: string) => {
+    return note
+      .replace(/^Status changed via Pipeline Board\./, 'Status über Pipeline-Board geändert.')
+      .replace(/Probability updated from (\d+)% to (\d+)%/, 'Wahrscheinlichkeit von $1% auf $2% aktualisiert')
   }
 
   if (loading) {
@@ -83,22 +106,27 @@ export default function StatusHistory({ projectId }: StatusHistoryProps) {
     )
   }
 
-  return (
-    <div className="card p-6">
-      <h3 className="text-lg font-bold text-ink mb-6 font-display flex items-center">
-        <svg className="h-5 w-5 text-blue mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        Status-Verlauf ({history.length})
-      </h3>
+  const safeHistory = Array.isArray(history) ? history : []
+  const visibleHistory = safeHistory.slice(Math.max(0, safeHistory.length - visibleCount))
 
-      <div className="relative">
+  return (
+    <div className="md:flex md:flex-col md:min-h-0">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-bold text-ink font-display">
+          Alle Änderungen ({safeHistory.length})
+        </h3>
+        <span className="text-xs text-ink-soft bg-ink/5 px-3 py-1 rounded-full">
+          Neueste zuerst
+        </span>
+      </div>
+
+      <div className="relative pr-2">
         {/* Timeline Line */}
         <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-ink/10"></div>
 
         <div className="space-y-4">
-          {history.map((entry, index) => {
-            const isLast = index === history.length - 1
+          {visibleHistory.map((entry, index) => {
+            const isLast = index === visibleHistory.length - 1
 
             return (
               <div key={entry.id} className="relative flex items-start space-x-4 pl-2">
@@ -135,24 +163,29 @@ export default function StatusHistory({ projectId }: StatusHistoryProps) {
                         </div>
                         
                         {entry.notes && (
-                          <p className="text-sm text-ink-soft">{entry.notes}</p>
+                          <p className="text-sm text-ink-soft">{localizeNote(entry.notes)}</p>
                         )}
                       </div>
                       
-                      <div className="text-right ml-4">
-                        <p className="text-sm font-semibold text-ink">
-                          {new Date(entry.changed_at).toLocaleDateString('de-DE')}
-                        </p>
-                        <p className="text-xs text-ink-soft">
-                          {new Date(entry.changed_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                      <div className="text-right ml-4 flex items-start gap-2">
+                        {entry.changed_by && (
+                          <div className="w-7 h-7 rounded-full bg-ink/5 border border-ink/10 flex items-center justify-center text-[10px] font-bold text-ink" title={entry.changed_by}>
+                            {getInitials(entry.changed_by)}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-semibold text-ink">
+                            {new Date(entry.changed_at).toLocaleDateString('de-DE')}
+                          </p>
+                          <p className="text-xs text-ink-soft">
+                            {new Date(entry.changed_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
                     {entry.changed_by && (
-                      <div className="text-xs text-ink-soft">
-                        Geändert von: {entry.changed_by}
-                      </div>
+                      <div className="text-xs text-ink-soft">Geändert von: {entry.changed_by}</div>
                     )}
                   </div>
                 </div>
@@ -161,6 +194,18 @@ export default function StatusHistory({ projectId }: StatusHistoryProps) {
           })}
         </div>
       </div>
+
+      {/* Controls */}
+      {safeHistory.length > visibleCount && (
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={() => setVisibleCount(prev => prev + 10)}
+            className="px-4 py-2 text-sm font-semibold rounded-lg border border-ink/20 hover:bg-ink/5 transition-colors"
+          >
+            Mehr laden
+          </button>
+        </div>
+      )}
     </div>
   )
 }

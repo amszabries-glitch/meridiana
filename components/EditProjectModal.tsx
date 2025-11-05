@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Project, Contact } from '@/lib/supabase'
 import { updateProject, getContactsByType } from '@/lib/actions'
+import { upsertProjectContactClient } from '@/lib/actions-client'
 
 interface EditProjectModalProps {
   project: Project | null
@@ -23,6 +24,16 @@ export default function EditProjectModal({ project, isOpen, onClose, onSuccess }
     probability: 0,
     next_steps: '',
     timeline: '',
+    // Transaction Costs
+    legal_fees: 0,
+    due_diligence_costs: 0,
+    broker_commission: 0,
+    exchange_fees: 0,
+    // Operational Costs
+    monthly_listing_fee: 0,
+    annual_compliance_costs: 0,
+    annual_accounting_costs: 0,
+    holding_period_months: 12,
     // Insolvency Administrator Fields
     insolvency_admin_name: '',
     insolvency_admin_email: '',
@@ -58,6 +69,16 @@ export default function EditProjectModal({ project, isOpen, onClose, onSuccess }
         probability: project.probability || 0,
         next_steps: project.next_steps || '',
         timeline: project.timeline || '',
+        // Transaction Costs
+        legal_fees: project.legal_fees || 0,
+        due_diligence_costs: project.due_diligence_costs || 0,
+        broker_commission: project.broker_commission || 0,
+        exchange_fees: project.exchange_fees || 0,
+        // Operational Costs
+        monthly_listing_fee: project.monthly_listing_fee || 0,
+        annual_compliance_costs: project.annual_compliance_costs || 0,
+        annual_accounting_costs: project.annual_accounting_costs || 0,
+        holding_period_months: project.holding_period_months || 12,
         // Insolvency Administrator Fields
         insolvency_admin_name: project.insolvency_admin_name || '',
         insolvency_admin_email: project.insolvency_admin_email || '',
@@ -77,6 +98,15 @@ export default function EditProjectModal({ project, isOpen, onClose, onSuccess }
     setLoading(true)
     try {
       await updateProject(project.id, formData)
+      if (selectedContactId) {
+        try {
+          await upsertProjectContactClient(project.id, selectedContactId, 'insolvency_admin')
+        } catch (linkErr) {
+          console.warn('Could not link insolvency_admin contact (non-fatal):', linkErr)
+        }
+      }
+      // Success confirmation for user
+      alert('Änderungen gespeichert')
       onSuccess()
       onClose()
     } catch (error) {
@@ -158,7 +188,9 @@ export default function EditProjectModal({ project, isOpen, onClose, onSuccess }
                   <option value="offer_submitted">Angebot abgegeben</option>
                   <option value="negotiation">Verhandlung</option>
                   <option value="offer_accepted">Angebot angenommen</option>
-                  <option value="closed">Gewonnen</option>
+                  <option value="contract_finalized">Kaufvertrag/Insolvenzplan fertiggestellt</option>
+                  <option value="creditors_meeting">Gläubigerversammlung durchgeführt</option>
+                  <option value="closed">Aktien ausgeliefert (abgeschlossen)</option>
                 </select>
               </div>
 
@@ -205,6 +237,117 @@ export default function EditProjectModal({ project, isOpen, onClose, onSuccess }
                   step="1000"
                   className="w-full px-4 py-3 border border-ink/20 rounded-xl focus:ring-2 focus:ring-blue focus:border-blue transition-colors"
                 />
+              </div>
+            </div>
+
+            {/* Kosten - Transaktionskosten */}
+            <div className="border-t border-ink/10 pt-6 mt-2">
+              <h3 className="text-lg font-semibold text-ink mb-4 font-display">Transaktionskosten</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-ink-soft mb-2">Rechtsanwalt (€)</label>
+                  <input
+                    type="number"
+                    name="legal_fees"
+                    value={formData.legal_fees}
+                    onChange={handleChange}
+                    min="0"
+                    step="100"
+                    className="w-full px-4 py-3 border border-ink/20 rounded-xl focus:ring-2 focus:ring-blue focus:border-blue transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-ink-soft mb-2">Due Diligence (€)</label>
+                  <input
+                    type="number"
+                    name="due_diligence_costs"
+                    value={formData.due_diligence_costs}
+                    onChange={handleChange}
+                    min="0"
+                    step="100"
+                    className="w-full px-4 py-3 border border-ink/20 rounded-xl focus:ring-2 focus:ring-blue focus:border-blue transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-ink-soft mb-2">Maklerprovision (%)</label>
+                  <input
+                    type="number"
+                    name="broker_commission"
+                    value={formData.broker_commission}
+                    onChange={handleChange}
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className="w-full px-4 py-3 border border-ink/20 rounded-xl focus:ring-2 focus:ring-blue focus:border-blue transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-ink-soft mb-2">Börsen-Gebühr (€)</label>
+                  <input
+                    type="number"
+                    name="exchange_fees"
+                    value={formData.exchange_fees}
+                    onChange={handleChange}
+                    min="0"
+                    step="100"
+                    className="w-full px-4 py-3 border border-ink/20 rounded-xl focus:ring-2 focus:ring-blue focus:border-blue transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Kosten - Betriebskosten */}
+            <div className="border-t border-ink/10 pt-6 mt-2">
+              <h3 className="text-lg font-semibold text-ink mb-4 font-display">Betriebskosten</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-ink-soft mb-2">Monatliche Listing-Gebühr (€)</label>
+                  <input
+                    type="number"
+                    name="monthly_listing_fee"
+                    value={formData.monthly_listing_fee}
+                    onChange={handleChange}
+                    min="0"
+                    step="50"
+                    className="w-full px-4 py-3 border border-ink/20 rounded-xl focus:ring-2 focus:ring-blue focus:border-blue transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-ink-soft mb-2">Compliance (jährlich) (€)</label>
+                  <input
+                    type="number"
+                    name="annual_compliance_costs"
+                    value={formData.annual_compliance_costs}
+                    onChange={handleChange}
+                    min="0"
+                    step="100"
+                    className="w-full px-4 py-3 border border-ink/20 rounded-xl focus:ring-2 focus:ring-blue focus:border-blue transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-ink-soft mb-2">Steuerberatung (jährlich) (€)</label>
+                  <input
+                    type="number"
+                    name="annual_accounting_costs"
+                    value={formData.annual_accounting_costs}
+                    onChange={handleChange}
+                    min="0"
+                    step="100"
+                    className="w-full px-4 py-3 border border-ink/20 rounded-xl focus:ring-2 focus:ring-blue focus:border-blue transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-ink-soft mb-2">Haltezeit (Monate)</label>
+                  <input
+                    type="number"
+                    name="holding_period_months"
+                    value={formData.holding_period_months}
+                    onChange={handleChange}
+                    min="0"
+                    step="1"
+                    className="w-full px-4 py-3 border border-ink/20 rounded-xl focus:ring-2 focus:ring-blue focus:border-blue transition-colors"
+                  />
+                </div>
               </div>
             </div>
 

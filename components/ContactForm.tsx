@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createContact } from '@/lib/actions'
+import { createContact, updateContact } from '@/lib/actions'
 import { Contact } from '@/lib/supabase'
 
 interface ContactFormProps {
@@ -31,8 +31,7 @@ export default function ContactForm({ onSuccess, onCancel, initialData, isEdit =
 
     try {
       if (isEdit && initialData?.id) {
-        // TODO: Implement update functionality
-        console.log('Edit mode - update functionality to be implemented')
+        await updateContact(initialData.id, formData as any)
       } else {
         await createContact(formData)
       }

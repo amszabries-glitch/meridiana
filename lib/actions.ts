@@ -1,7 +1,7 @@
 'use server'
 
 import { createSupabaseServerClient } from './supabase-server'
-import { Project, Contact, Document, DocumentVersion, ProjectStatusHistory, Milestone, AvailableShell } from './supabase'
+import { Project, Contact, Document, DocumentVersion, ProjectStatusHistory, Milestone, AvailableShell, ProjectDownPayment, ProjectDeposit } from './supabase'
 
 // Type helpers
 type NewDocument = Omit<Document, 'id' | 'created_at' | 'updated_at'>
@@ -173,6 +173,41 @@ export async function createContact(contact: Omit<Contact, 'id' | 'created_at'>)
   }
 
   return data[0]
+}
+
+export async function updateContact(id: string, updates: Partial<Contact>) {
+  const supabase = await createSupabaseServerClient()
+
+  const { data, error } = await supabase
+    .from('contacts')
+    .update({ ...updates })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating contact:', error)
+    throw new Error('Failed to update contact')
+  }
+
+  revalidatePath('/contacts')
+  return data
+}
+
+export async function deleteContact(id: string) {
+  const supabase = await createSupabaseServerClient()
+
+  const { error } = await supabase
+    .from('contacts')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error deleting contact:', error)
+    throw new Error('Failed to delete contact')
+  }
+
+  revalidatePath('/contacts')
 }
 
 // Dashboard Analytics
@@ -349,6 +384,38 @@ export async function deleteDocument(id: string) {
   }
 }
 
+// Project-Contact Relations
+export async function upsertProjectContact(projectId: string, contactId: string, role: 'buyer' | 'insolvency_admin' | 'broker' | 'lawyer' | 'advisor' | 'seller' | 'general') {
+  const supabase = await createSupabaseServerClient()
+
+  // Ensure only one contact per role when desired (e.g., buyer)
+  const { error: delError } = await supabase
+    .from('project_contacts')
+    .delete()
+    .eq('project_id', projectId)
+    .eq('role', role)
+
+  if (delError) {
+    console.error('Error cleaning existing project_contact:', delError)
+    // continue anyway
+  }
+
+  const { data, error } = await supabase
+    .from('project_contacts')
+    .insert([{ project_id: projectId, contact_id: contactId, role }])
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error upserting project_contact:', error)
+    throw new Error('Failed to link contact to project')
+  }
+
+  revalidatePath(`/projects/${projectId}`)
+  revalidatePath('/dashboard')
+  return data
+}
+
 export async function getDocumentVersions(documentId: string): Promise<DocumentVersion[]> {
   const supabase = await createSupabaseServerClient()
 
@@ -407,6 +474,9 @@ export async function createStatusHistoryEntry(
   notes?: string
 ): Promise<ProjectStatusHistory | null> {
   const supabase = await createSupabaseServerClient()
+  const { data: userRes } = await supabase.auth.getUser()
+  const user = userRes?.user
+  const changedBy = user?.user_metadata?.full_name || user?.email || null
 
   const { data, error } = await supabase
     .from('project_status_history')
@@ -415,6 +485,7 @@ export async function createStatusHistoryEntry(
       old_status: oldStatus,
       new_status: newStatus,
       notes: notes,
+      changed_by: changedBy || undefined,
       changed_at: new Date().toISOString()
     })
     .select()
@@ -585,4 +656,126 @@ export async function getAvailableShellById(id: string): Promise<AvailableShell 
   }
 
   return data
+}
+
+// --- Payment Schedule Actions ---
+export async function getDownPaymentsByProject(projectId: string): Promise<ProjectDownPayment[]> {
+  const supabase = await createSupabaseServerClient()
+
+  const { data, error } = await supabase
+    .from('project_down_payments')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('idx', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching down payments:', error)
+    return []
+  }
+  return data || []
+}
+
+export async function upsertDownPayments(projectId: string, entries: Array<Omit<ProjectDownPayment, 'id' | 'project_id' | 'created_at' | 'updated_at'>>): Promise<ProjectDownPayment[]> {
+  const supabase = await createSupabaseServerClient()
+
+  // Enforce max 5 and valid idx
+  const sanitized = entries
+    .filter(e => e.idx >= 1 && e.idx <= 5)
+    .slice(0, 5)
+    .map(e => ({ ...e, project_id: projectId }))
+
+  const { data, error } = await supabase
+    .from('project_down_payments')
+    .upsert(sanitized, { onConflict: 'project_id,idx' })
+    .select('*')
+
+  if (error) {
+    console.error('Error upserting down payments:', error)
+    throw new Error('Failed to upsert down payments')
+  }
+
+  // Revalidate project page
+  revalidatePath(`/projects/${projectId}`)
+  return data || []
+}
+
+export async function deleteDownPayment(projectId: string, idx: number): Promise<void> {
+  const supabase = await createSupabaseServerClient()
+
+  const { error } = await supabase
+    .from('project_down_payments')
+    .delete()
+    .eq('project_id', projectId)
+    .eq('idx', idx)
+
+  if (error) {
+    console.error('Error deleting down payment:', error)
+    throw new Error('Failed to delete down payment')
+  }
+  revalidatePath(`/projects/${projectId}`)
+}
+
+export async function getDepositsByProject(projectId: string): Promise<ProjectDeposit[]> {
+  const supabase = await createSupabaseServerClient()
+
+  const { data, error } = await supabase
+    .from('project_deposits')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('idx', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching deposits:', error)
+    return []
+  }
+  return data || []
+}
+
+export async function upsertDeposits(projectId: string, entries: Array<Omit<ProjectDeposit, 'id' | 'project_id' | 'created_at' | 'updated_at'>>): Promise<ProjectDeposit[]> {
+  const supabase = await createSupabaseServerClient()
+
+  const sanitized = entries
+    .filter(e => e.idx >= 1 && e.idx <= 3)
+    .slice(0, 3)
+    .map(e => ({ ...e, project_id: projectId }))
+
+  const { data, error } = await supabase
+    .from('project_deposits')
+    .upsert(sanitized, { onConflict: 'project_id,idx' })
+    .select('*')
+
+  if (error) {
+    console.error('Error upserting deposits:', error)
+    throw new Error('Failed to upsert deposits')
+  }
+  revalidatePath(`/projects/${projectId}`)
+  return data || []
+}
+
+export async function deleteDeposit(projectId: string, idx: number): Promise<void> {
+  const supabase = await createSupabaseServerClient()
+
+  const { error } = await supabase
+    .from('project_deposits')
+    .delete()
+    .eq('project_id', projectId)
+    .eq('idx', idx)
+
+  if (error) {
+    console.error('Error deleting deposit:', error)
+    throw new Error('Failed to delete deposit')
+  }
+  revalidatePath(`/projects/${projectId}`)
+}
+
+export async function getPaymentDelta(projectId: string): Promise<{ downPaymentsSum: number; depositsSum: number; delta: number; } > {
+  const [downs, deps] = await Promise.all([
+    getDownPaymentsByProject(projectId),
+    getDepositsByProject(projectId)
+  ])
+
+  const downPaymentsSum = downs.reduce((s, r) => s + (Number(r.amount) || 0), 0)
+  const depositsSum = deps.reduce((s, r) => s + (Number(r.amount) || 0), 0)
+  const delta = downPaymentsSum - depositsSum
+  return { downPaymentsSum, depositsSum, delta }
 }

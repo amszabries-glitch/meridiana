@@ -243,7 +243,9 @@ export default function AdvancedFilters({ projects, onFilteredProjects }: Advanc
             <option value="offer_submitted">Angebot abgegeben</option>
             <option value="negotiation">Verhandlung</option>
             <option value="offer_accepted">Angebot angenommen</option>
-            <option value="closed">Gewonnen</option>
+            <option value="contract_finalized">Kaufvertrag/Insolvenzplan fertiggestellt</option>
+            <option value="creditors_meeting">Gläubigerversammlung durchgeführt</option>
+            <option value="closed">Aktien ausgeliefert (abgeschlossen)</option>
           </select>
         </div>
 

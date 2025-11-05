@@ -10,7 +10,7 @@ export interface Project {
   id: string
   name: string
   company_name: string
-  status: 'lead' | 'offer_submitted' | 'negotiation' | 'offer_accepted' | 'closed'
+  status: 'lead' | 'offer_submitted' | 'negotiation' | 'offer_accepted' | 'contract_finalized' | 'creditors_meeting' | 'closed'
   has_buyer: boolean
   has_down_payment: boolean
   purchase_price: number
@@ -130,6 +130,31 @@ export interface AvailableShell {
   notes?: string
   broker_name?: string
   broker_contact?: string
+  created_at: string
+  updated_at: string
+}
+
+// Payment schedules
+export interface ProjectDownPayment {
+  id: string
+  project_id: string
+  idx: number // 1..5
+  amount: number
+  due_date?: string
+  paid_at?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ProjectDeposit {
+  id: string
+  project_id: string
+  idx: number // 1..3
+  amount: number
+  due_date?: string
+  paid_at?: string
+  notes?: string
   created_at: string
   updated_at: string
 }

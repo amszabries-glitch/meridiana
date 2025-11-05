@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createProject, getContactsByType } from '@/lib/actions'
+import { createProject, getContactsByType, upsertProjectContact, updateProject } from '@/lib/actions'
 import { Project, Contact } from '@/lib/supabase'
 
 interface ProjectFormProps {
@@ -45,15 +45,19 @@ export default function ProjectForm({ onSuccess, onCancel, initialData, isEdit =
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [insolvencyAdmins, setInsolvencyAdmins] = useState<Contact[]>([])
+  const [buyerContacts, setBuyerContacts] = useState<Contact[]>([])
   const [selectedContactId, setSelectedContactId] = useState<string>('')
+  const [selectedBuyerId, setSelectedBuyerId] = useState<string>('')
 
   // Load insolvency administrators on component mount
   useEffect(() => {
-    const loadInsolvencyAdmins = async () => {
+    const loadContacts = async () => {
       const admins = await getContactsByType('insolvency_admin')
       setInsolvencyAdmins(admins)
+      const buyers = await getContactsByType('buyer')
+      setBuyerContacts(buyers)
     }
-    loadInsolvencyAdmins()
+    loadContacts()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,7 +70,18 @@ export default function ProjectForm({ onSuccess, onCancel, initialData, isEdit =
         // TODO: Implement update functionality
         console.log('Edit mode - update functionality to be implemented')
       } else {
-        await createProject(formData)
+        // if buyer selected, mark has_buyer true
+        const payload = { ...formData, has_buyer: !!selectedBuyerId }
+        const created = await createProject(payload as any)
+        if (created?.id && selectedBuyerId) {
+          try {
+            await upsertProjectContact(created.id, selectedBuyerId, 'buyer')
+            // ensure project flag is synced
+            await updateProject(created.id, { has_buyer: true })
+          } catch (linkErr) {
+            console.error('Failed to link buyer to project:', linkErr)
+          }
+        }
       }
       onSuccess()
     } catch (err) {
@@ -152,6 +167,37 @@ export default function ProjectForm({ onSuccess, onCancel, initialData, isEdit =
             </div>
           </div>
 
+          {/* Buyer Section */}
+          <div className="border-t border-ink/10 pt-6">
+            <h3 className="text-lg font-bold text-ink mb-4 font-display">Potenzieller Käufer</h3>
+            <p className="text-sm text-ink-soft mb-4">Wählen Sie einen bestehenden Käufer-Kontakt (optional).</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-ink mb-2">Käufer aus Kontakten</label>
+                <select
+                  name="selected_buyer"
+                  value={selectedBuyerId}
+                  onChange={(e) => {
+                    const buyerId = e.target.value
+                    setSelectedBuyerId(buyerId)
+                    setFormData(prev => ({ ...prev, has_buyer: !!buyerId }))
+                  }}
+                  className="w-full px-4 py-3 border border-ink/20 rounded-xl focus:ring-2 focus:ring-blue focus:border-blue transition-all"
+                >
+                  <option value="">Keinen Käufer auswählen…</option>
+                  {buyerContacts.map((buyer) => (
+                    <option key={buyer.id} value={buyer.id}>
+                      {buyer.name} {buyer.company ? `(${buyer.company})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-end">
+                <div className="text-xs text-ink-soft">Hinweis: Käuferdetails werden automatisch im Projekt verknüpft.</div>
+              </div>
+            </div>
+          </div>
+
           {/* Status and Probability */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -168,7 +214,9 @@ export default function ProjectForm({ onSuccess, onCancel, initialData, isEdit =
                 <option value="offer_submitted">Angebot abgegeben</option>
                 <option value="negotiation">Verhandlung</option>
                 <option value="offer_accepted">Angebot angenommen</option>
-                <option value="closed">Gewonnen</option>
+                <option value="contract_finalized">Kaufvertrag/Insolvenzplan fertiggestellt</option>
+                <option value="creditors_meeting">Gläubigerversammlung durchgeführt</option>
+                <option value="closed">Aktien ausgeliefert (abgeschlossen)</option>
               </select>
             </div>
 
